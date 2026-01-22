@@ -61,8 +61,14 @@ handle_wordpress() {
     init)
       init_wordpress
       ;;
+    up)
+      up_wordpress
+      ;;
+    down)
+      down_wordpress
+      ;;
     *)
-      echo "Comando WordPress inválido. Use: init"
+      echo "Comando WordPress inválido. Use: init | up | down"
       exit 1
       ;;
   esac
