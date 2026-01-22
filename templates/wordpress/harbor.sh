@@ -53,16 +53,7 @@ mkdir -p wp/wp-content/uploads
 # 5. Criar arquivo .env se não existir ou preencher valores padrão
 if [[ ! -f .env ]]; then
   echo "🔧 Criando arquivo .env..."
-  cat <<EOF > .env
-# MySQL
-DB_NAME=wordpress
-DB_USER=wordpress
-DB_PASSWORD=secret
-DB_ROOT_PASSWORD=secret
-
-# WordPress
-WP_PORT=8080
-EOF
+  cp "$HARBOR_ROOT/templates/wordpress/.env" .env
 else
   echo "🔧 .env já existe, mantendo valores atuais."
 fi
