@@ -31,3 +31,29 @@ init_wordpress() {
   echo "✅ Estrutura inicial do WordPress criada com sucesso!"
   echo "Use ./bin/harbor.sh para subir containers e gerenciar o projeto."
 }
+
+up_wordpress() {
+  echo "🚀 Subindo containers WordPress..."
+
+  # Verifica Docker
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ Docker não encontrado."
+    exit 1
+  fi
+
+  if ! docker info >/dev/null 2>&1; then
+    echo "❌ Docker não está em execução."
+    exit 1
+  fi
+
+  # Verifica docker-compose.yml
+  if [[ ! -f docker-compose.yml ]]; then
+    echo "❌ docker-compose.yml não encontrado."
+    exit 1
+  fi
+
+  # Sobe os containers
+  docker-compose up -d
+
+  echo "✅ Containers WordPress iniciados com sucesso."
+}
