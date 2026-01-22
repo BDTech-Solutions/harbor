@@ -92,7 +92,7 @@ down_wordpress() {
     exit 1
   fi
 
-  docker-compose down
+  docker compose down
 
   echo "✅ Containers WordPress parados com sucesso."
 }
