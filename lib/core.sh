@@ -31,9 +31,11 @@ show_help() {
 Harbor - Development Environment Bootstrapper
 
 Uso:
-  harbor laravel init
-  harbor laravel bootstrap
-  harbor wordpress init
+  harbor laravel init # Inicializa um novo projeto Laravel
+  harbor laravel bootstrap # Gera o arquivo harbor.sh para o projeto Laravel atual
+  harbor wordpress init # Inicializa um novo projeto WordPress
+  harbor wordpress up   # Sobe os containers do WordPress
+  harbor wordpress down # Para os containers do WordPress
 
 Opções:
   --version     Mostra a versão
