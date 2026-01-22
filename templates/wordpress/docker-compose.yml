@@ -1,68 +1,44 @@
 services:
-  # Container do banco de dados
   db:
-    image: mariadb:11
-    container_name: wp_db
-    restart: always
+    image: mysql:8.0
+    container_name: wordpress_db
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
-      - db_data:/var/lib/mysql
-    networks:
-      - harbor_network
-
-  # Container do PHP + FPM
-  php:
-    image: php:8.2-fpm
-    container_name: wp_php
-    restart: always
-    working_dir: /var/www/html
-    volumes:
-      - ./wp:/var/www/html
-      - ./php.ini:/usr/local/etc/php/conf.d/custom.ini # se quiser configs customizadas
-    networks:
-      - harbor_network
-    depends_on:
-      - db
-
-  # Container do Nginx
-  web:
-    image: nginx:latest
-    container_name: wp_web
-    restart: always
+      - ./docker/mysql_data:/var/lib/mysql
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./wp:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    networks:
-      - harbor_network
-    depends_on:
-      - php
+      - "3306:3306"
 
-  # Opcional: phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: wp_phpmyadmin
-    restart: always
+    container_name: wordpress_phpmyadmin
+    restart: unless-stopped
     environment:
       PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: rootpassword
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "8080:80"
-    networks:
-      - harbor_network
+      - "8081:80"
     depends_on:
       - db
 
-volumes:
-  db_data:
-
-networks:
-  harbor_network:
-    driver: bridge
+  wordpress:
+    image: wordpress:6.4-php8.2-apache
+    container_name: wordpress_app
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./wp:/var/www/html
+      - ./docker/php_data:/var/www/html/wp-content/uploads
+    ports:
+      - "${WP_PORT}:80"
+    depends_on:
+      - db
