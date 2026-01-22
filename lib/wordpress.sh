@@ -35,7 +35,15 @@ init_wordpress() {
     # 2. Cria diretórios
     mkdir -p wp/wp-content/plugins wp/wp-content/themes wp/wp-content/uploads
 
-    # 3. Cria .env se não existir
+    # 3. Cria .gitignore se não existir
+    if [[ ! -f .gitignore ]]; then
+      echo "🧾 Criando .gitignore..."
+      cp "$HARBOR_ROOT/templates/wordpress/.gitignore" .gitignore
+    else
+      echo "✅ .gitignore já existe, mantendo."
+    fi
+
+    # 4. Cria .env se não existir
     if [[ ! -f .env ]]; then
         echo "🌿 Criando arquivo .env..."
         cp "$HARBOR_ROOT/templates/wordpress/.env" .env
@@ -43,7 +51,7 @@ init_wordpress() {
         echo "✅ .env já existe, mantendo valores atuais."
     fi
 
-    # 4. Cria harbor.sh na raiz do projeto se não existir
+    # 5. Cria harbor.sh na raiz do projeto se não existir
     if [[ ! -f bin/harbor.sh ]]; then
         echo "📄 Criando bin/harbor.sh..."
         mkdir -p bin
@@ -53,7 +61,7 @@ init_wordpress() {
 
     echo "✅ Estrutura inicial do WordPress criada com sucesso!"
 
-    # 5. Se --up foi passado, sobe os containers automaticamente
+    # 6. Se --up foi passado, sobe os containers automaticamente
     if [[ "$UP_FLAG" == true ]]; then
         up_wordpress
     else
