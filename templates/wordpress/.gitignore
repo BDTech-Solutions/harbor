@@ -1,18 +1,26 @@
 # WordPress core
 wp/
 
-# Uploads e cache
-wp-content/uploads/
-wp-content/cache/
+# Uploads
+wp/wp-content/uploads/
 
-# Docker volumes
-docker/mysql_data
-docker/php_data
+# Plugins (descomente se quiser versionar plugins próprios)
+wp/wp-content/plugins/
 
-# IDEs
-.idea/
-*.iml
+# Cache
+wp/wp-content/cache/
+wp/wp-content/upgrade/
+
+# Env
+.env
+
+# Docker
+docker-compose.override.yml
 
 # Logs
 *.log
-*.tmp
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
