@@ -50,7 +50,7 @@ mkdir -p wp/wp-content/plugins
 mkdir -p wp/wp-content/themes
 mkdir -p wp/wp-content/uploads
 
-# 5. Criar arquivo .env se não existir
+# 5. Criar arquivo .env se não existir ou preencher valores padrão
 if [[ ! -f .env ]]; then
   echo "🔧 Criando arquivo .env..."
   cat <<EOF > .env
@@ -63,6 +63,8 @@ DB_ROOT_PASSWORD=secret
 # WordPress
 WP_PORT=8080
 EOF
+else
+  echo "🔧 .env já existe, mantendo valores atuais."
 fi
 
 # 6. Se docker-compose.yml não existir, copiar o template
@@ -75,5 +77,7 @@ fi
 echo "🚀 Iniciando containers..."
 docker-compose up -d
 
+# 8. Informar URL de acesso
+WP_PORT_VAL=$(grep WP_PORT .env | cut -d= -f2)
 echo "✅ Ambiente WordPress iniciado com sucesso."
-echo "👉 Abra http://localhost:\$(grep WP_PORT .env | cut -d= -f2) para acessar o site."
+echo "👉 Abra http://localhost:${WP_PORT_VAL} para acessar o site."
