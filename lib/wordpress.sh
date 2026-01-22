@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
 
+check_docker() {
+  # Verifica se Docker está instalado
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ Docker não encontrado."
+    exit 1
+  fi
+
+  # Verifica se Docker está rodando
+  if ! docker info >/dev/null 2>&1; then
+    echo "❌ Docker não está em execução."
+    exit 1
+  fi
+}
+
 init_wordpress() {
   echo "⚓ Harbor - Inicializando projeto WordPress"
 
-  # 1. Verifica se estamos em um diretório Harbor (wp-content ou docker-compose.yml)
+  # 1. Cria docker-compose.yml se não existir
   if [[ -f docker-compose.yml ]]; then
     echo "✅ docker-compose.yml já existe"
   else
@@ -11,16 +25,16 @@ init_wordpress() {
     cp "$HARBOR_ROOT/templates/wordpress/docker-compose.yml" .
   fi
 
-  # 2. Cria diretórios wp-content/plugins e wp-content/themes se não existirem
+  # 2. Cria diretórios wp-content/plugins e wp-content/themes
   mkdir -p wp/wp-content/plugins wp/wp-content/themes
 
-  # 3. Cria arquivo .env se não existir
+  # 3. Cria arquivo .env
   if [[ ! -f .env ]]; then
     echo "🌿 Criando arquivo .env..."
     cp "$HARBOR_ROOT/templates/wordpress/.env" .env
   fi
 
-  # 4. Cria harbor.sh na raiz do projeto se não existir
+  # 4. Cria bin/harbor.sh
   if [[ ! -f bin/harbor.sh ]]; then
     echo "📄 Criando bin/harbor.sh..."
     mkdir -p bin
@@ -35,16 +49,7 @@ init_wordpress() {
 up_wordpress() {
   echo "🚀 Subindo containers WordPress..."
 
-  # Verifica Docker
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "❌ Docker não encontrado."
-    exit 1
-  fi
-
-  if ! docker info >/dev/null 2>&1; then
-    echo "❌ Docker não está em execução."
-    exit 1
-  fi
+  check_docker
 
   # Verifica docker-compose.yml
   if [[ ! -f docker-compose.yml ]]; then
@@ -56,4 +61,19 @@ up_wordpress() {
   docker-compose up -d
 
   echo "✅ Containers WordPress iniciados com sucesso."
+}
+
+down_wordpress() {
+  echo "🛑 Parando containers WordPress..."
+
+  check_docker
+
+  if [[ ! -f docker-compose.yml ]]; then
+    echo "❌ docker-compose.yml não encontrado."
+    exit 1
+  fi
+
+  docker-compose down
+
+  echo "✅ Containers WordPress parados com sucesso."
 }
