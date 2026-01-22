@@ -1,0 +1,18 @@
+# WordPress core
+wp/
+
+# Uploads e cache
+wp-content/uploads/
+wp-content/cache/
+
+# Docker volumes
+docker/mysql_data
+docker/php_data
+
+# IDEs
+.idea/
+*.iml
+
+# Logs
+*.log
+*.tmp
