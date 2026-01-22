@@ -61,7 +61,7 @@ handle_laravel() {
 handle_wordpress() {
   case "${1:-}" in
     init)
-      init_wordpress
+      init_wordpress "$@"
       ;;
     up)
       up_wordpress
