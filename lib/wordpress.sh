@@ -15,35 +15,54 @@ check_docker() {
 }
 
 init_wordpress() {
-  echo "⚓ Harbor - Inicializando projeto WordPress"
+    local UP_FLAG=false
 
-  # 1. Cria docker-compose.yml se não existir
-  if [[ -f docker-compose.yml ]]; then
-    echo "✅ docker-compose.yml já existe"
-  else
-    echo "📦 Criando docker-compose.yml básico para WordPress..."
-    cp "$HARBOR_ROOT/templates/wordpress/docker-compose.yml" .
-  fi
+    # Verifica se --up foi passado
+    for arg in "$@"; do
+        [[ "$arg" == "--up" ]] && UP_FLAG=true
+    done
 
-  # 2. Cria diretórios wp-content/plugins e wp-content/themes
-  mkdir -p wp/wp-content/plugins wp/wp-content/themes
+    echo "⚓ Harbor - Inicializando projeto WordPress"
 
-  # 3. Cria arquivo .env
-  if [[ ! -f .env ]]; then
-    echo "🌿 Criando arquivo .env..."
-    cp "$HARBOR_ROOT/templates/wordpress/.env" .env
-  fi
+    # 1. Cria docker-compose.yml se não existir
+    if [[ ! -f docker-compose.yml ]]; then
+        echo "📦 Criando docker-compose.yml básico para WordPress..."
+        cp "$HARBOR_ROOT/templates/wordpress/docker-compose.yml" .
+    else
+        echo "✅ docker-compose.yml já existe"
+    fi
 
-  # 4. Cria bin/harbor.sh
-  if [[ ! -f bin/harbor.sh ]]; then
-    echo "📄 Criando bin/harbor.sh..."
-    mkdir -p bin
-    cp "$HARBOR_ROOT/templates/wordpress/harbor.sh" bin/harbor.sh
-    chmod +x bin/harbor.sh
-  fi
+    # 2. Cria diretórios
+    mkdir -p wp/wp-content/plugins wp/wp-content/themes wp/wp-content/uploads
 
-  echo "✅ Estrutura inicial do WordPress criada com sucesso!"
-  echo "Use ./bin/harbor.sh para subir containers e gerenciar o projeto."
+    # 3. Cria .env se não existir
+    if [[ ! -f .env ]]; then
+        echo "🌿 Criando arquivo .env..."
+        cp "$HARBOR_ROOT/templates/wordpress/.env" .env
+    else
+        echo "✅ .env já existe, mantendo valores atuais."
+    fi
+
+    # 4. Cria harbor.sh na raiz do projeto se não existir
+    if [[ ! -f bin/harbor.sh ]]; then
+        echo "📄 Criando bin/harbor.sh..."
+        mkdir -p bin
+        cp "$HARBOR_ROOT/templates/wordpress/harbor.sh" bin/harbor.sh
+        chmod +x bin/harbor.sh
+    fi
+
+    echo "✅ Estrutura inicial do WordPress criada com sucesso!"
+
+    # 5. Se --up foi passado, sobe os containers automaticamente
+    if [[ "$UP_FLAG" == true ]]; then
+        up_wordpress
+    else
+        # Pergunta interativa caso --up não seja usado
+        read -p "Deseja subir os containers agora? [y/N]: " RESP
+        [[ "$RESP" =~ ^[Yy]$ ]] && up_wordpress
+    fi
+
+    echo "👉 Use ./bin/harbor.sh para gerenciar o projeto WordPress."
 }
 
 up_wordpress() {
