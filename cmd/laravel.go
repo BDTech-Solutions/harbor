@@ -12,8 +12,9 @@ var laravelCmd = &cobra.Command{
 	Use:   "laravel",
 	Short: "Manage Laravel projects",
 	Long:  `Commands to initialize and bootstrap Laravel development environments.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("subcommand required: init | bootstrap")
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cmd.Help()
 	},
 }
 

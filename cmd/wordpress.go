@@ -12,8 +12,9 @@ var wordpressCmd = &cobra.Command{
 	Use:   "wordpress",
 	Short: "Manage WordPress projects",
 	Long:  `Commands to initialize and manage WordPress development environments via Docker.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("subcommand required: init | up | down")
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cmd.Help()
 	},
 }
 
