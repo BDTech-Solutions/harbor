@@ -8,59 +8,70 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var wordpressCmd = &cobra.Command{
-	Use:   "wordpress",
-	Short: "Manage WordPress projects",
-	Long:  `Commands to initialize and manage WordPress development environments via Docker.`,
-	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
-	},
+// NewWordpressCommand builds the "harbor wordpress" command tree.
+func NewWordpressCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "wordpress",
+		Short: "Manage WordPress projects",
+		Long:  `Commands to initialize and manage WordPress development environments via Docker.`,
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
+	}
+
+	cmd.AddCommand(newWordpressInitCommand())
+	cmd.AddCommand(newWordpressUpCommand())
+	cmd.AddCommand(newWordpressDownCommand())
+
+	return cmd
 }
 
-var wordpressInitCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize a new WordPress project in the current directory",
-	Long: `Sets up Docker Compose, .env, .gitignore and directory structure
+func newWordpressInitCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "init",
+		Short: "Initialize a new WordPress project in the current directory",
+		Long: `Sets up Docker Compose, .env, .gitignore and directory structure
 for a WordPress project. Starts containers automatically on first run.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not get current directory: %w", err)
-		}
-		return wordpress.Init(cwd)
-	},
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("could not get current directory: %w", err)
+			}
+			return wordpress.Init(cwd)
+		},
+	}
 }
 
-var wordpressUpCmd = &cobra.Command{
-	Use:   "up",
-	Short: "Start WordPress containers",
-	Long:  `Runs 'docker compose up -d' in the current project directory.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not get current directory: %w", err)
-		}
-		return wordpress.Up(cwd)
-	},
+func newWordpressUpCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "up",
+		Short: "Start WordPress containers",
+		Long:  `Runs 'docker compose up -d' in the current project directory.`,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("could not get current directory: %w", err)
+			}
+			return wordpress.Up(cwd)
+		},
+	}
 }
 
-var wordpressDownCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Stop WordPress containers",
-	Long:  `Runs 'docker compose down' in the current project directory.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not get current directory: %w", err)
-		}
-		return wordpress.Down(cwd)
-	},
-}
-
-func init() {
-	wordpressCmd.AddCommand(wordpressInitCmd)
-	wordpressCmd.AddCommand(wordpressUpCmd)
-	wordpressCmd.AddCommand(wordpressDownCmd)
-	rootCmd.AddCommand(wordpressCmd)
+func newWordpressDownCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "down",
+		Short: "Stop WordPress containers",
+		Long:  `Runs 'docker compose down' in the current project directory.`,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("could not get current directory: %w", err)
+			}
+			return wordpress.Down(cwd)
+		},
+	}
 }
