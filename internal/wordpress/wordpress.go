@@ -1,46 +1,42 @@
 package wordpress
 
 import (
-	"bufio"
 	"embed"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/BDTech-Solutions/harbor/internal/docker"
+	"github.com/BDTech-Solutions/harbor/internal/env"
+	"github.com/BDTech-Solutions/harbor/internal/scaffold"
 )
 
 //go:embed templates
 var templates embed.FS
 
-// Init sets up a WordPress project in dir:
-// copies templates, creates directory structure, starts containers,
-// and fixes file ownership so the host user can edit the files.
-func Init(dir string) error {
+const defaultPort = "8080"
+
+// Stack implements stack.Stack for WordPress projects.
+type Stack struct{}
+
+func (s Stack) Init(dir string) error {
 	fmt.Println("⚓ Harbor - Initializing WordPress project")
 
-	if err := copyTemplateIfMissing(dir, "docker-compose.yml"); err != nil {
-		return err
-	}
-	if err := copyTemplateIfMissing(dir, ".gitignore"); err != nil {
-		return err
-	}
-	if err := copyTemplateIfMissing(dir, ".env"); err != nil {
-		return err
+	files := []string{"docker-compose.yml", ".gitignore", ".env"}
+	for _, f := range files {
+		if err := scaffold.CopyIfMissing(templates, "templates/"+f, dir); err != nil {
+			return err
+		}
 	}
 
-	dirs := []string{
+	err := scaffold.MakeDirs(
 		filepath.Join(dir, "wp", "wp-content", "plugins"),
 		filepath.Join(dir, "wp", "wp-content", "themes"),
 		filepath.Join(dir, "wp", "wp-content", "uploads"),
-	}
-	for _, d := range dirs {
-		if err := os.MkdirAll(d, 0755); err != nil {
-			return fmt.Errorf("could not create directory %s: %w", d, err)
-		}
+	)
+	if err != nil {
+		return err
 	}
 
 	fmt.Println("✅ File structure created.")
@@ -58,18 +54,13 @@ func Init(dir string) error {
 		fmt.Println("⚠️  Warning:", err.Error())
 	}
 
-	port, _ := readEnvValue(filepath.Join(dir, ".env"), "WP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
+	port := env.Get(filepath.Join(dir, ".env"), "WP_PORT", defaultPort)
 	fmt.Println("✅ WordPress project initialized!")
 	fmt.Printf("🌐 Open http://localhost:%s to access the site.\n", port)
 	return nil
 }
 
-// Up starts existing WordPress containers.
-func Up(dir string) error {
+func (s Stack) Up(dir string) error {
 	fmt.Println("🚀 Starting WordPress containers...")
 
 	if err := docker.Check(); err != nil {
@@ -84,18 +75,13 @@ func Up(dir string) error {
 		return fmt.Errorf("docker compose up failed: %w", err)
 	}
 
-	port, _ := readEnvValue(filepath.Join(dir, ".env"), "WP_PORT")
-	if port == "" {
-		port = "8080"
-	}
-
+	port := env.Get(filepath.Join(dir, ".env"), "WP_PORT", defaultPort)
 	fmt.Println("✅ WordPress environment ready!")
 	fmt.Printf("🌐 Open http://localhost:%s\n", port)
 	return nil
 }
 
-// Down stops WordPress containers.
-func Down(dir string) error {
+func (s Stack) Down(dir string) error {
 	fmt.Println("🛑 Stopping WordPress containers...")
 
 	if err := docker.Check(); err != nil {
@@ -110,13 +96,11 @@ func Down(dir string) error {
 	return nil
 }
 
-// waitForWordPress polls until wp/wp-settings.php appears, then fixes ownership.
 func waitForWordPress(dir string) error {
 	fmt.Println("⏳ Waiting for WordPress to extract its files...")
 
 	wpSettings := filepath.Join(dir, "wp", "wp-settings.php")
-	timeout := 30 * time.Second
-	deadline := time.Now().Add(timeout)
+	deadline := time.Now().Add(30 * time.Second)
 
 	for time.Now().Before(deadline) {
 		if _, err := os.Stat(wpSettings); err == nil {
@@ -133,42 +117,4 @@ func waitForWordPress(dir string) error {
 	}
 
 	return fmt.Errorf("WordPress took too long to initialize — check 'docker compose logs'")
-}
-
-// copyTemplateIfMissing copies an embedded template to dir if the file doesn't exist yet.
-func copyTemplateIfMissing(dir, filename string) error {
-	dest := filepath.Join(dir, filename)
-	if _, err := os.Stat(dest); err == nil {
-		return nil // already exists
-	}
-
-	data, err := fs.ReadFile(templates, "templates/"+filename)
-	if err != nil {
-		return fmt.Errorf("embedded template %q not found: %w", filename, err)
-	}
-
-	if err := os.WriteFile(dest, data, 0644); err != nil {
-		return fmt.Errorf("could not write %s: %w", filename, err)
-	}
-
-	return nil
-}
-
-// readEnvValue parses KEY=VALUE lines from a .env file.
-func readEnvValue(envFile, key string) (string, error) {
-	f, err := os.Open(envFile)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	prefix := key + "="
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimPrefix(line, prefix), nil
-		}
-	}
-	return "", fmt.Errorf("key %q not found in %s", key, envFile)
 }

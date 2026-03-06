@@ -3,20 +3,19 @@ package laravel
 import (
 	"embed"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 
 	"github.com/BDTech-Solutions/harbor/internal/docker"
+	"github.com/BDTech-Solutions/harbor/internal/scaffold"
 )
 
 //go:embed templates/harbor.sh
 var templates embed.FS
 
-// Init creates a brand-new Laravel project in dir using Docker + Composer,
-// installs Sail, then drops a harbor.sh bootstrap script.
-// The directory must be empty.
-func Init(dir string) error {
+// Stack implements stack.Stack for Laravel projects.
+type Stack struct{}
+
+func (s Stack) Init(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("cannot read directory: %w", err)
@@ -55,7 +54,7 @@ func Init(dir string) error {
 		return fmt.Errorf("sail:install failed: %w", err)
 	}
 
-	if err := writeHarborScript(dir); err != nil {
+	if err := scaffold.CopyExecutableIfMissing(templates, "templates/harbor.sh", dir); err != nil {
 		return err
 	}
 
@@ -64,8 +63,37 @@ func Init(dir string) error {
 	return nil
 }
 
+func (s Stack) Up(dir string) error {
+	fmt.Println("🚀 Starting Laravel environment with Sail...")
+
+	if err := assertLaravelProject(dir); err != nil {
+		return err
+	}
+
+	if err := docker.Check(); err != nil {
+		return err
+	}
+
+	return docker.Run(dir, "vendor/bin/sail", "up", "-d")
+}
+
+func (s Stack) Down(dir string) error {
+	fmt.Println("🛑 Stopping Laravel environment...")
+
+	if err := assertLaravelProject(dir); err != nil {
+		return err
+	}
+
+	if err := docker.Check(); err != nil {
+		return err
+	}
+
+	return docker.Run(dir, "vendor/bin/sail", "down")
+}
+
 // Bootstrap copies harbor.sh into an existing Laravel project.
-// The directory must look like a Laravel project and must not already have harbor.sh.
+// This is Laravel-specific behaviour with no equivalent in other stacks,
+// so it lives outside the Stack interface.
 func Bootstrap(dir string) error {
 	fmt.Println("🔎 Checking Laravel project...")
 
@@ -73,13 +101,7 @@ func Bootstrap(dir string) error {
 		return err
 	}
 
-	harborScript := filepath.Join(dir, "harbor.sh")
-	if _, err := os.Stat(harborScript); err == nil {
-		fmt.Println("ℹ️  harbor.sh already exists in this project — nothing to do.")
-		return nil
-	}
-
-	if err := writeHarborScript(dir); err != nil {
+	if err := scaffold.CopyExecutableIfMissing(templates, "templates/harbor.sh", dir); err != nil {
 		return err
 	}
 
@@ -88,28 +110,13 @@ func Bootstrap(dir string) error {
 	return nil
 }
 
-// assertLaravelProject returns an error if dir doesn't look like a Laravel project.
 func assertLaravelProject(dir string) error {
-	required := []string{"artisan", "composer.json", filepath.Join("bootstrap", "app.php")}
+	required := []string{"artisan", "composer.json", "bootstrap/app.php"}
 	for _, f := range required {
-		if _, err := os.Stat(filepath.Join(dir, f)); os.IsNotExist(err) {
+		path := dir + "/" + f
+		if _, err := os.Stat(path); os.IsNotExist(err) {
 			return fmt.Errorf("this directory does not look like a Laravel project (missing %s)", f)
 		}
 	}
-	return nil
-}
-
-// writeHarborScript embeds the template and writes it to dir/harbor.sh.
-func writeHarborScript(dir string) error {
-	data, err := fs.ReadFile(templates, "templates/harbor.sh")
-	if err != nil {
-		return fmt.Errorf("embedded template not found: %w", err)
-	}
-
-	dest := filepath.Join(dir, "harbor.sh")
-	if err := os.WriteFile(dest, data, 0755); err != nil {
-		return fmt.Errorf("could not write harbor.sh: %w", err)
-	}
-
 	return nil
 }
