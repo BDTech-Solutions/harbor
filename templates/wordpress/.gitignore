@@ -1,26 +1,22 @@
-# WordPress core
-wp/
+# Ignora tudo do WordPress por padrão
+wp/*
 
-# Uploads
+# Abre exceção para o conteúdo que você vai desenvolver
+!wp/wp-content/
+wp/wp-content/*
+!wp/wp-content/themes/
+!wp/wp-content/plugins/
+
+# Ignora pastas de sistema do WP
+wp/wp-content/upgrade/
+wp/wp-content/cache/
 wp/wp-content/uploads/
 
-# Plugins (descomente se quiser versionar plugins próprios)
-wp/wp-content/plugins/
-
-# Cache
-wp/wp-content/cache/
-wp/wp-content/upgrade/
-
-# Env
+# Arquivos de ambiente e Docker
 .env
-
-# Docker
 docker-compose.override.yml
 
-# Logs
+# Logs e arquivos de sistema
 *.log
-
-# OS / Editor
 .DS_Store
-.idea/
 .vscode/

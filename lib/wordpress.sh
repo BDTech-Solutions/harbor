@@ -1,76 +1,71 @@
 #!/usr/bin/env bash
 
 check_docker() {
-  # Verifica se Docker está instalado
   if ! command -v docker >/dev/null 2>&1; then
     echo "❌ Docker não encontrado."
     exit 1
   fi
 
-  # Verifica se Docker está rodando
   if ! docker info >/dev/null 2>&1; then
     echo "❌ Docker não está em execução."
     exit 1
   fi
 }
 
+bootstrap_wordpress() {
+    echo "⏳ Aguardando a extração inicial dos arquivos do WordPress..."
+
+    local COUNTER=0
+    # Aguarda até o core do WP ser extraído para a pasta /wp
+    while [ ! -f wp/wp-settings.php ] && [ $COUNTER -lt 30 ]; do
+        sleep 1
+        ((COUNTER++))
+    done
+
+    if [ -f wp/wp-settings.php ]; then
+        echo "🐳 Ajustando permissões via Docker para o usuário $(whoami)..."
+        # Executa o chown via root do container para liberar os arquivos no Host (Ubuntu)
+        docker compose exec -u root wordpress chown -R $(id -u):$(id -g) /var/www/html
+        echo "✅ Permissões ajustadas."
+    else
+        echo "⚠️  Aviso: O WordPress demorou a inicializar. Verifique 'docker compose logs'."
+    fi
+}
+
 init_wordpress() {
     local UP_FLAG=false
-
-    # Verifica se --up foi passado
     for arg in "$@"; do
         [[ "$arg" == "--up" ]] && UP_FLAG=true
     done
 
     echo "⚓ Harbor - Inicializando projeto WordPress"
 
-    # 1. Cria docker-compose.yml se não existir
-    if [[ ! -f docker-compose.yml ]]; then
-        echo "📦 Criando docker-compose.yml básico para WordPress..."
-        cp "$HARBOR_ROOT/templates/wordpress/docker-compose.yml" .
-    else
-        echo "✅ docker-compose.yml já existe"
-    fi
-
-    # 2. Cria diretórios
+    # 1. Preparação de Arquivos (Copiar templates)
+    [[ ! -f docker-compose.yml ]] && cp "$HARBOR_ROOT/templates/wordpress/docker-compose.yml" .
+    [[ ! -f .gitignore ]] && cp "$HARBOR_ROOT/templates/wordpress/.gitignore" .gitignore
+    [[ ! -f .env ]] && cp "$HARBOR_ROOT/templates/wordpress/.env" .env
+    
+    # 2. Preparação de Diretórios
     mkdir -p wp/wp-content/plugins wp/wp-content/themes wp/wp-content/uploads
-
-    # 3. Cria .gitignore se não existir
-    if [[ ! -f .gitignore ]]; then
-      echo "🧾 Criando .gitignore..."
-      cp "$HARBOR_ROOT/templates/wordpress/.gitignore" .gitignore
-    else
-      echo "✅ .gitignore já existe, mantendo."
-    fi
-
-    # 4. Cria .env se não existir
-    if [[ ! -f .env ]]; then
-        echo "🌿 Criando arquivo .env..."
-        cp "$HARBOR_ROOT/templates/wordpress/.env" .env
-    else
-        echo "✅ .env já existe, mantendo valores atuais."
-    fi
-
-    # 5. Cria harbor.sh na raiz do projeto se não existir
-    if [[ ! -f bin/harbor.sh ]]; then
-        echo "📄 Criando bin/harbor.sh..."
+    
+    # 3. Binário de controle local
+    if [[ ! -f bin/harbor ]]; then
         mkdir -p bin
-        cp "$HARBOR_ROOT/templates/wordpress/harbor.sh" bin/harbor.sh
-        chmod +x bin/harbor.sh
+        cp "$HARBOR_ROOT/templates/wordpress/harbor" bin/harbor
+        chmod +x bin/harbor
     fi
 
-    echo "✅ Estrutura inicial do WordPress criada com sucesso!"
+    echo "✅ Estrutura de arquivos criada."
 
-    # 6. Se --up foi passado, sobe os containers automaticamente
-    if [[ "$UP_FLAG" == true ]]; then
-        up_wordpress
-    else
-        # Pergunta interativa caso --up não seja usado
-        read -p "Deseja subir os containers agora? [y/N]: " RESP
-        [[ "$RESP" =~ ^[Yy]$ ]] && up_wordpress
-    fi
+    # 4. Provisionamento do Container (Só ocorre no Init)
+    check_docker
+    docker compose up -d
+    
+    # Chama a função de permissões apenas aqui, na criação
+    bootstrap_wordpress
 
-    echo "👉 Use ./bin/harbor.sh para gerenciar o projeto WordPress."
+    echo "✅ Projeto inicializado com sucesso!"
+    echo "👉 Use ./bin/harbor.sh para gerenciar o projeto."
 }
 
 up_wordpress() {
@@ -78,29 +73,23 @@ up_wordpress() {
 
   check_docker
 
-  # Verifica docker-compose.yml
   if [[ ! -f docker-compose.yml ]]; then
-    echo "❌ docker-compose.yml não encontrado."
+    echo "❌ Erro: docker-compose.yml não encontrado. Rode 'harbor wordpress init' primeiro."
     exit 1
   fi
 
-  # Sobe os containers
-  docker compose -f docker-compose.yml up -d
+  # No dia-a-dia, apenas sobe os containers. Sem loops, sem chown.
+  docker compose up -d
 
-  echo "✅ Containers WordPress iniciados com sucesso."
+  # Carrega a porta do .env para exibir a URL correta
+  local PORT=$(grep WP_PORT .env | cut -d '=' -f2)
+  echo "✅ Ambiente WordPress pronto!"
+  echo "🌐 Acesse: http://localhost:${PORT:-8080}"
 }
 
 down_wordpress() {
   echo "🛑 Parando containers WordPress..."
-
   check_docker
-
-  if [[ ! -f docker-compose.yml ]]; then
-    echo "❌ docker-compose.yml não encontrado."
-    exit 1
-  fi
-
   docker compose down
-
-  echo "✅ Containers WordPress parados com sucesso."
+  echo "✅ Containers WordPress parados."
 }
