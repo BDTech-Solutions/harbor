@@ -1,0 +1,22 @@
+# Ignora tudo do WordPress por padrão
+wp/*
+
+# Abre exceção para o conteúdo que você vai desenvolver
+!wp/wp-content/
+wp/wp-content/*
+!wp/wp-content/themes/
+!wp/wp-content/plugins/
+
+# Ignora pastas de sistema do WP
+wp/wp-content/upgrade/
+wp/wp-content/cache/
+wp/wp-content/uploads/
+
+# Arquivos de ambiente e Docker
+.env
+docker-compose.override.yml
+
+# Logs e arquivos de sistema
+*.log
+.DS_Store
+.vscode/

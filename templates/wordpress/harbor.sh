@@ -21,26 +21,7 @@ fi
 # 3. Criar .gitignore se não existir
 if [[ ! -f .gitignore ]]; then
   echo "🌿 Criando .gitignore..."
-  cat <<EOF > .gitignore
-# WordPress core
-wp/
-
-# Uploads e cache
-wp-content/uploads/
-wp-content/cache/
-
-# Docker volumes
-docker/mysql_data
-docker/php_data
-
-# IDEs
-.idea/
-*.iml
-
-# Logs
-*.log
-*.tmp
-EOF
+  cp "$HARBOR_ROOT/templates/wordpress/.gitignore" .gitignore
 fi
 
 # 4. Criar estrutura de pastas se necessário
@@ -53,16 +34,7 @@ mkdir -p wp/wp-content/uploads
 # 5. Criar arquivo .env se não existir ou preencher valores padrão
 if [[ ! -f .env ]]; then
   echo "🔧 Criando arquivo .env..."
-  cat <<EOF > .env
-# MySQL
-DB_NAME=wordpress
-DB_USER=wordpress
-DB_PASSWORD=secret
-DB_ROOT_PASSWORD=secret
-
-# WordPress
-WP_PORT=8080
-EOF
+  cp "$HARBOR_ROOT/templates/wordpress/.env" .env
 else
   echo "🔧 .env já existe, mantendo valores atuais."
 fi
